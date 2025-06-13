@@ -76,7 +76,7 @@ class DeltaForcePlugin(Star):
             self.games["runs"][group_id][player_id]["sign_days"] += 1
             if "ap" not in self.games["runs"][group_id][player_id]:
                 self.games["runs"][group_id][player_id]["ap"] = 0
-            self.games["runs"][group_id][player_id]["ap"] += self.games["runs"][group_id][player_id]["sign_days"] * 100
+            self.games["runs"][group_id][player_id]["ap"] += self.games["runs"][group_id][player_id]["sign_days"] * 10
             yield event.plain_result(f"{player_raw} 签到成功,获得{self.games['runs'][group_id][player_id]['sign_days'] * 10}点行动次数,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
         elif self.games["runs"][group_id][player_id]["sign"] == 1:
             yield event.plain_result(f"{player_raw} 已经签到过了,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
