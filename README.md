@@ -1,8 +1,8 @@
-# helloworld
+# Delta Force 文字交互版游戏插件
 
-AstrBot 插件模板
+Delta Force 文字交互版游戏插件
 
-A template plugin for AstrBot plugin feature
+
 
 # 支持
 
