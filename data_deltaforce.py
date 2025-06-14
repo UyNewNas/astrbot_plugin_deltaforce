@@ -188,11 +188,11 @@ class DrawItem:
     """
     def __init__(self) -> None:
         self.items = []
-        self.items.append(ROCollection().data)
-        self.items.append(ROArmor().data)
-        self.items.append(ROBag().data)
-        self.items.append(ROChest().data)
-        self.items.append(ROHelmet().data)
+        self.items.extend(ROCollection().data)
+        self.items.extend(ROArmor().data)
+        self.items.extend(ROBag().data)
+        self.items.extend(ROChest().data)
+        self.items.extend(ROHelmet().data)
     
     def draw_item(self):        
         weight = random.random() * 100 

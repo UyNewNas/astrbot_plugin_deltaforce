@@ -1,6 +1,6 @@
 
 from typing import Dict, List, Optional, Set, Tuple
-
+from datetime import datetime
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
@@ -49,6 +49,16 @@ class DeltaForcePlugin(Star):
         )
         return f"{formatted_nickname}({qq})"
     
+    def _get_today(self) -> Tuple[int, int, int]:
+        today = datetime.now()
+        logger.info(f"当前时间戳: {today}")
+        return today.year, today.month, today.day
+    
+    def _get_now(self):
+        now = datetime.now()
+        logger.info(f"当前时间戳: {now}")
+        return now
+    
     @filter.command_group("deltaforce", alias={"洲","DF"})
     async def deltaforce_cmd(self, event: AstrMessageEvent):
         pass
@@ -57,6 +67,8 @@ class DeltaForcePlugin(Star):
     @deltaforce_cmd.command("签到") # type: ignore
     async def deltaforce_sign(self, event: AstrMessageEvent):
         """签到"""
+        today = "%s.%s.%s" % self._get_today()
+        now = self._get_now()
         player_id = event.get_sender_id()
         player_name = event.get_sender_name()
         player_raw = f"{player_name}({player_id})"
@@ -67,10 +79,15 @@ class DeltaForcePlugin(Star):
         if player_id not in self.games["runs"][group_id]:
             self.games["runs"][group_id][player_id] = {}
         if "sign" not in self.games["runs"][group_id][player_id]:
-            self.games["runs"][group_id][player_id]["sign"] = 0
-        if self.games["runs"][group_id][player_id]["sign"] == 0:
+            self.games["runs"][group_id][player_id]["sign"] = {}
+        if f"{today}" not in self.games["runs"][group_id][player_id]["sign"]:
+            self.games["runs"][group_id][player_id]["sign"][f"{today}"] = {"is_sign": 0}
+        if self.games["runs"][group_id][player_id]["sign"][f"{today}"]["is_sign"]== 0:
+            # 记录时间戳用于恢复行动点,以每天第一次签到的时间戳开始计算
+            if "sign_timestamp" not in self.games["runs"][group_id][player_id]["sign"][f"{today}"] :
+                self.games["runs"][group_id][player_id]["sign"][f"{today}"]["sign_timestamp"] = now
             # 签到成功,按天数*n获得十连抽
-            self.games["runs"][group_id][player_id]["sign"] = 1            
+            self.games["runs"][group_id][player_id]["sign"][f"{today}"]["is_sign"]= 1            
             if "sign_days" not in self.games["runs"][group_id][player_id]:
                 self.games["runs"][group_id][player_id]["sign_days"] = 0
             self.games["runs"][group_id][player_id]["sign_days"] += 1
@@ -78,7 +95,7 @@ class DeltaForcePlugin(Star):
                 self.games["runs"][group_id][player_id]["ap"] = 0
             self.games["runs"][group_id][player_id]["ap"] += self.games["runs"][group_id][player_id]["sign_days"] * 10
             yield event.plain_result(f"{player_raw} 签到成功,获得{self.games['runs'][group_id][player_id]['sign_days'] * 10}点行动次数,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
-        elif self.games["runs"][group_id][player_id]["sign"] == 1:
+        elif self.games["runs"][group_id][player_id]["sign"][f"{today}"]["is_sign"] == 1:
             yield event.plain_result(f"{player_raw} 已经签到过了,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
         
     
@@ -121,17 +138,33 @@ class DeltaForcePlugin(Star):
     async def deltaforce_run(self, event: AstrMessageEvent, _times: str|None=None):
         """跑刀"""
         try:
+            player_id = event.get_sender_id()
+            player_name = event.get_sender_name()
+            player_raw = f"{player_name}({player_id})"
+            player_raw = self._format_display_info(player_raw)
+            group_id = event.get_group_id()
+            today = "%s.%s.%s" % self._get_today()
+            # 判断是否签到
+            if f"{today}" not in self.games["runs"][group_id][player_id]["sign"]:
+                yield event.plain_result(f"{player_raw} 请先签到")
+            now = self._get_now()
+            # 计算时间差
+            sign_timestamp = self.games["runs"][group_id][player_id]["sign"][f"{today}"]["sign_timestamp"]
+            time_diff = now - sign_timestamp
+            days = time_diff.days            
+            total_seconds = time_diff.total_seconds()
+            remaining_seconds = total_seconds - (days * 24 * 3600)
+            hours = remaining_seconds / 3600.0
+            # 每过一个小时恢复2点行动点
+            if hours >= 1:
+                self.games["runs"][group_id][player_id]["ap"] += 2*int(hours)
             if _times is None:
                 times = 1
             else:
                 times = int(_times)
                 if times > 10:
                     times = 10
-            player_id = event.get_sender_id()
-            player_name = event.get_sender_name()
-            player_raw = f"{player_name}({player_id})"
-            player_raw = self._format_display_info(player_raw)
-            group_id = event.get_group_id()
+            
             if group_id not in self.games["runs"]:
                 self.games["runs"][group_id] = {}
             if player_id not in self.games["runs"][group_id]:
