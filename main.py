@@ -67,6 +67,7 @@ class DeltaForcePlugin(Star):
     @deltaforce_cmd.command("签到") # type: ignore
     async def deltaforce_sign(self, event: AstrMessageEvent):
         """签到"""
+        logger.info(self.games)
         today = "%s.%s.%s" % self._get_today()
         now = self._get_now()
         player_id = event.get_sender_id()
@@ -97,7 +98,7 @@ class DeltaForcePlugin(Star):
             yield event.plain_result(f"{player_raw} 签到成功,获得{self.games['runs'][group_id][player_id]['sign_days'] * 10}点行动次数,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
         elif self.games["runs"][group_id][player_id]["sign"][f"{today}"]["is_sign"] == 1:
             yield event.plain_result(f"{player_raw} 已经签到过了,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
-        
+        logger.info(self.games)
     
     def _format_collections(self, collections:List[Dict]):
         """格式化collection"""
@@ -138,6 +139,7 @@ class DeltaForcePlugin(Star):
     async def deltaforce_run(self, event: AstrMessageEvent, _times: str|None=None):
         """跑刀"""
         try:
+            logger.info(self.games)
             player_id = event.get_sender_id()
             player_name = event.get_sender_name()
             player_raw = f"{player_name}({player_id})"
@@ -154,7 +156,7 @@ class DeltaForcePlugin(Star):
             days = time_diff.days            
             total_seconds = time_diff.total_seconds()
             remaining_seconds = total_seconds - (days * 24 * 3600)
-            hours = remaining_seconds / 3600.0
+            hours = remaining_seconds# / 3600.0
             # 每过一个小时恢复2点行动点
             if hours >= 1:
                 self.games["runs"][group_id][player_id]["ap"] += 2*int(hours)
@@ -163,8 +165,7 @@ class DeltaForcePlugin(Star):
             else:
                 times = int(_times)
                 if times > 10:
-                    times = 10
-            
+                    times = 10            
             if group_id not in self.games["runs"]:
                 self.games["runs"][group_id] = {}
             if player_id not in self.games["runs"][group_id]:
@@ -193,6 +194,7 @@ class DeltaForcePlugin(Star):
             info = self._format_collections(results)
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
+            logger.info(self.games)
         except Exception as e:
             logger.exception(e)
             yield event.plain_result(f"跑刀失败,请联系管理员")
