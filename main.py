@@ -155,6 +155,7 @@ class DeltaForcePlugin(Star):
             # 判断是否签到
             if f"{today}" not in self.games["runs"][group_id][player_id]["sign"]:
                 yield event.plain_result(f"{player_raw} 请先签到")
+                return
             now = self._get_now()
             # 计算时间差
             sign_timestamp = self.games["runs"][group_id][player_id]["sign"][f"{today}"]["sign_timestamp"]
