@@ -6,7 +6,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 import astrbot.api.message_components as Comp
 
-from .data_deltaforce import DrawCollection
+from .data_deltaforce import DrawItem
 
 @register(
     "DeltaForce",
@@ -147,7 +147,7 @@ class DeltaForcePlugin(Star):
                 Comp.At(qq=player_id),
                 Comp.Plain(f"{player_raw} 跑了 {times} 次刀.")
             ]
-            draw_collection = DrawCollection()
+            draw_collection = DrawItem()
             if times == 10:
                 results = draw_collection.ten_draw()
                 yield event.plain_result("跑刀中, 请等待雇佣兵返回结果")               

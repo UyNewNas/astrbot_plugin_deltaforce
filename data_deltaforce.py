@@ -80,15 +80,119 @@ class ROCollection:
         获取json文件中的数据
         """
         return self.data[key] if key in self.data else {}
-  
+
+class ROArmor:
+    """
+    读取armor.json文件
+    """
+    def __init__(self) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "armor.json")
+        self.data = self._read_json(self.path)
+    
+    def _read_json(self, path) -> Dict:
+        """
+        读取json文件
+        """
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                os.remove(path)
+        return {}
+    def get(self, key: str) -> Dict:
+        """
+        获取json文件中的数据
+        """
+        return self.data[key] if key in self.data else {}
+
+class ROBag:
+    """
+    读取bag.json文件
+    """
+    def __init__(self) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "bag.json")
+        self.data = self._read_json(self.path)
+    
+    def _read_json(self, path) -> Dict:
+        """
+        读取json文件
+        """
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                os.remove(path)
+        return {}
+    def get(self, key: str) -> Dict:
+        """
+        获取json文件中的数据
+        """
+        return self.data[key] if key in self.data else {}
+class ROChest:
+    """
+    读取 chest.json文件
+    """
+    def __init__(self) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "chest.json")
+        self.data = self._read_json(self.path)
+    
+    def _read_json(self, path) -> Dict:
+        """
+        读取json文件
+        """
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                os.remove(path)
+        return {}
+    def get(self, key: str) -> Dict:
+        """
+        获取json文件中的数据
+        """
+        return self.data[key] if key in self.data else {}
+class ROHelmet:
+    """
+    读取 helmet.json文件
+    """
+    def __init__(self) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "helmet.json")
+        self.data = self._read_json(self.path)
+    
+    def _read_json(self, path) -> Dict:
+        """
+        读取json文件
+        """
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                os.remove(path)
+        return {}
+    def get(self, key: str) -> Dict:
+        """
+        获取json文件中的数据
+        """
+        return self.data[key] if key in self.data else {}
+
+
 import random  
     
-class DrawCollection:
+class DrawItem:
     """
     跑刀模拟器(简化为开盲盒)
     """
     def __init__(self) -> None:
-        self.items = ROCollection().data
+        self.items = []
+        self.items.append(ROCollection().data)
+        self.items.append(ROArmor().data)
+        self.items.append(ROBag().data)
+        self.items.append(ROChest().data)
+        self.items.append(ROHelmet().data)
     
     def draw_item(self):        
         weight = random.random() * 100 
