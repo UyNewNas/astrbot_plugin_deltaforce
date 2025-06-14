@@ -6,7 +6,8 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 import astrbot.api.message_components as Comp
 
-from .data_deltaforce import DrawItem
+from .data_deltaforce import DrawItem, DataDeltaForce
+data = DataDeltaForce()
 
 @register(
     "DeltaForce",
@@ -22,7 +23,7 @@ class DeltaForcePlugin(Star):
         self.games = {
             "runs":{},
             "bags":{}
-        }
+        } if data.get_deltaforce() is None else data.get_deltaforce()
         
     def _parse_display_info(self, raw_info: str) -> Tuple[str, str]:
         try:
@@ -58,7 +59,15 @@ class DeltaForcePlugin(Star):
     def _get_now(self):
         now = datetime.now()
         logger.info(f"当前时间戳: {now}")
-        return now
+        return {
+            "year": now.year,
+            "month": now.month,
+            "day": now.day,
+            "hour": now.hour,
+            "minute": now.minute,
+            "second": now.second,
+            "microsecond": now.microsecond
+        }
     
     @filter.command_group("deltaforce", alias={"洲","DF"})
     async def deltaforce_cmd(self, event: AstrMessageEvent):
@@ -100,6 +109,7 @@ class DeltaForcePlugin(Star):
         elif self.games["runs"][group_id][player_id]["sign"][f"{today}"]["is_sign"] == 1:
             yield event.plain_result(f"{player_raw} 已经签到过了,当前可行动次数{self.games['runs'][group_id][player_id]['ap']}点")
         logger.info(self.games)
+        data.update_deltaforce(self.games)
     
     def _format_collections(self, collections:List[Dict]):
         """格式化collection"""
@@ -146,11 +156,15 @@ class DeltaForcePlugin(Star):
             player_raw = f"{player_name}({player_id})"
             player_raw = self._format_display_info(player_raw)
             group_id = event.get_group_id()
-            today = "%s.%s.%s" % self._get_today()            
+            today = "%s.%s.%s" % self._get_today()  
+            if "runs" not in self.games:
+                self.games["runs"] = {}
+            if "bags" not in self.games:
+                self.games["bags"] = {}
             if group_id not in self.games["runs"]:
                 self.games["runs"][group_id] = {}
             if player_id not in self.games["bags"]:
-                self.games["bags"][player_id] = {}
+                self.games["bags"][player_id] = []
             if player_id not in self.games["runs"][group_id]:
                 self.games["runs"][group_id][player_id] = {}
             if "sign" not in self.games["runs"][group_id][player_id]:
@@ -162,7 +176,25 @@ class DeltaForcePlugin(Star):
             now = self._get_now()
             # 计算时间差
             sign_timestamp = self.games["runs"][group_id][player_id]["sign"][f"{today}"]["sign_timestamp"]
-            time_diff = now - sign_timestamp
+            now_datetime = datetime(
+                year=now["year"],
+                month=now["month"],
+                day=now["day"],
+                hour=now["hour"],
+                minute=now["minute"],
+                second=now["second"],
+                microsecond=now["microsecond"]
+            )
+            sign_timestamp_datetime = datetime(
+                year=sign_timestamp["year"],
+                month=sign_timestamp["month"],
+                day=sign_timestamp["day"],
+                hour=sign_timestamp["hour"],
+                minute=sign_timestamp["minute"],
+                second=sign_timestamp["second"],
+                microsecond=sign_timestamp["microsecond"]
+            )
+            time_diff = now_datetime - sign_timestamp_datetime
             days = time_diff.days            
             total_seconds = time_diff.total_seconds()
             remaining_seconds = total_seconds - (days * 24 * 3600)
@@ -208,6 +240,7 @@ class DeltaForcePlugin(Star):
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
             logger.info(self.games)
+            data.update_deltaforce(self.games)
         except Exception as e:
             logger.exception(e)
             yield event.plain_result(f"跑刀失败,请联系管理员")

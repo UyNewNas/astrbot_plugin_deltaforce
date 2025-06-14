@@ -55,7 +55,45 @@ class IODeltaForce:
         self._write_json(self.data)
         self.data = self._read_json(self.path)
         
+
+class DataDeltaForce:
+    """
+    数据处理类，负责读取和写入deltaforce.json文件
+    """
+    def __init__(self) -> None:
+        self.io = IODeltaForce()
         
+    def _new_io(self) -> None:
+        """
+        创建新的IO实例
+        """
+        self.io = IODeltaForce()
+    
+    def get(self, key: str) -> Dict:
+        """
+        获取数据
+        """
+        self._new_io()  # 确保每次获取数据时都使用最新的IO实例
+        return self.io.get(key)
+    
+    def put(self, key: str, value: Dict) -> None:
+        """
+        写入数据
+        """
+        self._new_io()  # 确保每次获取数据时都使用最新的IO实例
+        self.io.put(key, value)
+    
+    def get_deltaforce(self) -> Dict:
+        """
+        获取deltaforce数据
+        """
+        return self.get("deltaforce")
+    def update_deltaforce(self, data: Dict) -> None:
+        """
+        更新deltaforce数据
+        """
+        self.put("deltaforce", data)
+       
 class ROCollection:
     """
     读取collection.json文件
