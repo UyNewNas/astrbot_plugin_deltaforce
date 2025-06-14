@@ -197,7 +197,9 @@ class DeltaForcePlugin(Star):
                 for _ in range(times):
                     results.append(draw_collection.draw_item())
             for _ in results:
-                chain.append(Comp.Image.fromURL(_.get("pic")))
+                # 只有稀有度大于等于5的才展示图片
+                if _.get("grade") >= 5:
+                    chain.append(Comp.Image.fromURL(_.get("pic")))
             info = self._format_collections(results)
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
