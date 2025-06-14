@@ -163,7 +163,7 @@ class DeltaForcePlugin(Star):
             days = time_diff.days            
             total_seconds = time_diff.total_seconds()
             remaining_seconds = total_seconds - (days * 24 * 3600)
-            hours = remaining_seconds# / 3600.0
+            hours = remaining_seconds / 3600.0
             # 每过一个小时恢复2点行动点
             if hours >= 1:
                 self.games["runs"][group_id][player_id]["ap"] += 2*int(hours)
