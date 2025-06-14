@@ -20,7 +20,8 @@ class DeltaForcePlugin(Star):
         super().__init__(context)
         self.config = config
         self.games = {
-            "runs":{}
+            "runs":{},
+            "bags":{}
         }
         
     def _parse_display_info(self, raw_info: str) -> Tuple[str, str]:
@@ -148,6 +149,8 @@ class DeltaForcePlugin(Star):
             today = "%s.%s.%s" % self._get_today()            
             if group_id not in self.games["runs"]:
                 self.games["runs"][group_id] = {}
+            if player_id not in self.games["bags"]:
+                self.games["bags"][player_id] = {}
             if player_id not in self.games["runs"][group_id]:
                 self.games["runs"][group_id][player_id] = {}
             if "sign" not in self.games["runs"][group_id][player_id]:
@@ -176,7 +179,7 @@ class DeltaForcePlugin(Star):
             if group_id not in self.games["runs"]:
                 self.games["runs"][group_id] = {}
             if player_id not in self.games["runs"][group_id]:
-                self.games["runs"][group_id][player_id] = {}
+                self.games["runs"][group_id][player_id] = []
             if "ap" not in self.games["runs"][group_id][player_id]:
                 self.games["runs"][group_id][player_id]["ap"] = 0
             ap = self.games["runs"][group_id][player_id]["ap"]
@@ -200,6 +203,7 @@ class DeltaForcePlugin(Star):
                 # 只有稀有度大于等于5的才展示图片
                 if _.get("grade") >= 5:
                     chain.append(Comp.Image.fromURL(_.get("pic")))
+                    self.games["bags"][player_id].append(_)
             info = self._format_collections(results)
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
