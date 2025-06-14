@@ -61,15 +61,7 @@ class DeltaForcePlugin(Star):
     
     @filter.command_group("deltaforce", alias={"洲","DF"})
     async def deltaforce_cmd(self, event: AstrMessageEvent):
-        player_id = event.get_sender_id()
-        player_name = event.get_sender_name()
-        player_raw = f"{player_name}({player_id})"
-        player_raw = self._format_display_info(player_raw)
-        group_id = event.get_group_id()
-        if group_id not in self.games["runs"]:
-            self.games["runs"][group_id] = {}
-        if player_id not in self.games["runs"][group_id]:
-            self.games["runs"][group_id][player_id] = {}
+        pass
     
     
     @deltaforce_cmd.command("签到") # type: ignore
@@ -153,7 +145,11 @@ class DeltaForcePlugin(Star):
             player_raw = f"{player_name}({player_id})"
             player_raw = self._format_display_info(player_raw)
             group_id = event.get_group_id()
-            today = "%s.%s.%s" % self._get_today()
+            today = "%s.%s.%s" % self._get_today()            
+            if group_id not in self.games["runs"]:
+                self.games["runs"][group_id] = {}
+            if player_id not in self.games["runs"][group_id]:
+                self.games["runs"][group_id][player_id] = {}
             # 判断是否签到
             if f"{today}" not in self.games["runs"][group_id][player_id]["sign"]:
                 yield event.plain_result(f"{player_raw} 请先签到")
