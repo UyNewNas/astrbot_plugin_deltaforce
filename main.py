@@ -61,7 +61,15 @@ class DeltaForcePlugin(Star):
     
     @filter.command_group("deltaforce", alias={"洲","DF"})
     async def deltaforce_cmd(self, event: AstrMessageEvent):
-        pass
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        group_id = event.get_group_id()
+        if group_id not in self.games["runs"]:
+            self.games["runs"][group_id] = {}
+        if player_id not in self.games["runs"][group_id]:
+            self.games["runs"][group_id][player_id] = {}
     
     
     @deltaforce_cmd.command("签到") # type: ignore
