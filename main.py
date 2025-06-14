@@ -150,6 +150,8 @@ class DeltaForcePlugin(Star):
                 self.games["runs"][group_id] = {}
             if player_id not in self.games["runs"][group_id]:
                 self.games["runs"][group_id][player_id] = {}
+            if "sign" not in self.games["runs"][group_id][player_id]:
+                self.games["runs"][group_id][player_id]["sign"] = {}
             # 判断是否签到
             if f"{today}" not in self.games["runs"][group_id][player_id]["sign"]:
                 yield event.plain_result(f"{player_raw} 请先签到")
