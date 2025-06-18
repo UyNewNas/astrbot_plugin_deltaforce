@@ -119,6 +119,31 @@ class ROCollection:
         """
         return self.data[key] if key in self.data else {}
 
+class RORoomKey:
+    """
+    读取key.json文件
+    """
+    def __init__(self) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "key.json")
+        self.data = self._read_json(self.path)
+    
+    def _read_json(self, path) -> Dict:
+        """
+        读取json文件
+        """
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                os.remove(path)
+        return {}
+    def get(self, key: str) -> Dict:
+        """
+        获取json文件中的数据
+        """
+        return self.data[key] if key in self.data else {}
+
 class ROArmor:
     """
     读取armor.json文件
@@ -227,6 +252,7 @@ class DrawItem:
     def __init__(self) -> None:
         self.items = []
         self.items.extend(ROCollection().data)
+        self.items.extend(RORoomKey().data)
         self.items.extend(ROArmor().data)
         self.items.extend(ROBag().data)
         self.items.extend(ROChest().data)
@@ -254,13 +280,23 @@ class DrawItem:
     def ten_draw(self):
         results = []
         found_epic = False
-        
+        # 模拟极小概率的大红事件
+        if random.random() < 0.01:
+            is_big_red= True
+        else:
+            is_big_red = False   
+        # 如果是大红事件，从金色和红色里抽
+        if is_big_red:
+            red_pool = [i for i in self.items if i['grade'] >= 5]
+            for i in range(10):
+                results.append( random.choice(red_pool))
+            return results
+        # 普通十连        
         for i in range(10):
             item = self.draw_item()
             results.append(item)
             if item['grade'] >= 4:  # 紫或以上
                 found_epic = True
-        
         # 未出紫装时替换最后一件
         if not found_epic:
             epic_pool = [i for i in self.items if i['grade'] >= 4]

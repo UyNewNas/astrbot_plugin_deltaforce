@@ -141,11 +141,32 @@ class DeltaForcePlugin(Star):
             if i == 6:
                 tag="🔴"
             collection_names = [collection.get("objectName") for collection in info[i]]
-            info_str = f"{tag}战利品({len(info[i])})有:{collection_names}" # type: ignore
-            info["result"] += info_str + "\n"
+            info_str = f"\n{tag}战利品({len(info[i])})有:{','.join(collection_names)}" # type: ignore
+            info["result"] += info_str
         return info["result"]
             
-
+    def _collections_progress(self, collections:List[Dict]):
+        """计算金色和红色战利品去重后的数量"""
+        unique_gold = set()
+        unique_red = set()
+        for collection in collections:
+            if collection.get("grade") == 5:
+                unique_gold.add(collection.get("objectName"))
+            if collection.get("grade") == 6:
+                unique_red.add(collection.get("objectName"))
+        return {
+            "gold": len(unique_gold),
+            "red": len(unique_red)
+        }
+    
+    def _format_progress_bar(self, current: int, total: int, length: int = 20) -> str:
+        """格式化进度条"""
+        if total <= 0:
+            return "无进度"
+        filled_length = int(length * current // total)
+        bar = "█" * filled_length + "-" * (length - filled_length)
+        return f"[{bar}] {current}/{total} ({(current / total) * 100:.2f}%)"
+    
     @deltaforce_cmd.command("跑刀") # type: ignore
     async def deltaforce_run(self, event: AstrMessageEvent, _times: str|None=None):
         """跑刀"""
@@ -249,7 +270,36 @@ class DeltaForcePlugin(Star):
             
             
             
-            
+    @deltaforce_cmd.command("查询背包") # type: ignore
+    async def deltaforce_bag(self, event: AstrMessageEvent):
+        """查询背包"""
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        if player_id not in self.games["bags"]:
+            yield event.plain_result(f"{player_raw} 背包为空")
+            return
+        if len(self.games["bags"][player_id]) == 0:
+            yield event.plain_result(f"{player_raw} 背包为空")
+            return
+        
+        plain = [f"{player_raw} 的背包:"]
+        info = self._format_collections(self.games["bags"][player_id])
+        plain.append(info)
+        player_progress = self._collections_progress(self.games["bags"][player_id])
+        all_progress = self._collections_progress(DrawItem().items)
+        bar_gold = self._format_progress_bar(
+            player_progress["gold"], all_progress["gold"]
+        )
+        bar_red = self._format_progress_bar(
+            player_progress["red"], all_progress["red"]
+        )
+        plain.append(f"金色战利品进度: {bar_gold}({player_progress['gold']}/{all_progress['gold']})")
+        plain.append(f"红色战利品进度: {bar_red}({player_progress['red']}/{all_progress['red']})")
+        chain = [Comp.At(qq=player_id), Comp.Plain("\n".join(plain))]
+        logger.info(self.games)
+        yield event.chain_result(chain)
             
             
     
