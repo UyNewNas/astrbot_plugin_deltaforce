@@ -260,7 +260,7 @@ class DeltaForcePlugin(Star):
             info = self._format_collections(results)
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
-            logger.info(self.games)
+            logger.debug(self.games)
             data.update_deltaforce(self.games)
         except Exception as e:
             logger.exception(e)
@@ -298,7 +298,7 @@ class DeltaForcePlugin(Star):
         plain.append(f"金色战利品进度: {bar_gold}({player_progress['gold']}/{all_progress['gold']})")
         plain.append(f"红色战利品进度: {bar_red}({player_progress['red']}/{all_progress['red']})")
         chain = [Comp.At(qq=player_id), Comp.Plain("\n".join(plain))]
-        logger.info(self.games)
+        logger.debug(self.games)
         yield event.chain_result(chain)
             
             
