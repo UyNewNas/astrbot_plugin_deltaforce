@@ -7,6 +7,7 @@ from astrbot.api import logger
 import astrbot.api.message_components as Comp
 
 from .data_deltaforce import DrawItem, DataDeltaForce
+from .price import DeltaForcePrice
 data = DataDeltaForce()
 
 @register(
@@ -252,23 +253,26 @@ class DeltaForcePlugin(Star):
                 results = []
                 for _ in range(times):
                     results.append(draw_collection.draw_item())
+            total_price = 0
             for _ in results:
+                # 查询物品价格并累加
+                name = _.get("objectName")
+                price = await DeltaForcePrice().get_price(name)
+                if price is not None:
+                    total_price += price
                 # 只有稀有度大于等于5的才展示图片
                 if _.get("grade") >= 5:
                     chain.append(Comp.Image.fromURL(_.get("pic")))
                     self.games["bags"][player_id].append(_)
             info = self._format_collections(results)
+            info += f"\n总价值约为{total_price:,}哈夫币"
             chain.append(Comp.Plain(info))
             yield event.chain_result(chain)
-            logger.debug(self.games)
+            # 写入数据
             data.update_deltaforce(self.games)
         except Exception as e:
             logger.exception(e)
             yield event.plain_result(f"跑刀失败,请联系管理员")
-            
-            
-            
-            
             
     @deltaforce_cmd.command("查询背包") # type: ignore
     async def deltaforce_bag(self, event: AstrMessageEvent):
@@ -302,4 +306,49 @@ class DeltaForcePlugin(Star):
         yield event.chain_result(chain)
             
             
+    @deltaforce_cmd.command("查询行动点") # type: ignore
+    async def deltaforce_ap(self, event: AstrMessageEvent):
+        """查询行动点"""
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        if player_id not in self.games["runs"]:
+            yield event.plain_result(f"{player_raw} 当前没有进行中的行动")
+            return
+        ap = self.games["runs"][player_id].get("ap", 0)
+        yield event.plain_result(f"{player_raw} 当前可行动点: {ap}")
     
+    @deltaforce_cmd.command("查询价格") # type: ignore
+    async def deltaforce_price(self, event: AstrMessageEvent, item_name: str):
+        """查询价格"""
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        price = await DeltaForcePrice().get_price(item_name)
+        if price is not None:
+            yield event.plain_result(f"{player_raw}\n{item_name} 的当日价格为: {price:,}哈夫币\n具体价格可能会有波动,请以实际游戏为准")
+        else:
+            yield event.plain_result(f"未找到 {item_name} 的当日价格信息,请联系管理员")
+    
+    @deltaforce_cmd.command("查询背包价格") # type: ignore
+    async def deltaforce_bag_price(self, event: AstrMessageEvent):
+        """查询背包总价格"""
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        if player_id not in self.games["bags"]:
+            yield event.plain_result(f"{player_raw} 背包为空")
+            return
+        total_price = 0
+        for item in self.games["bags"][player_id]:
+            price = await DeltaForcePrice().get_price(item.get("objectName"))
+            if price is not None:
+                total_price += price
+        if total_price > 0:
+            yield event.plain_result(f"{player_raw} 背包总价值约为: {total_price:,}哈夫币")
+        else:
+            yield event.plain_result(f"{player_raw} 背包中没有可查询价格的物品")
+       
