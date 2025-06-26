@@ -10,6 +10,26 @@ from .data_deltaforce import DrawItem, DataDeltaForce
 from .price import DeltaForcePrice, AcgIceSJZApi
 data = DataDeltaForce()
 
+import subprocess
+from playwright import _repo_version as pw_version
+
+def install_playwright_browsers():
+    try:
+        # 检查驱动是否已安装
+        from playwright.__main__ import main
+        if not subprocess.run(["playwright", "install", "--dry-run"], capture_output=True).returncode == 0:
+            print("Installing Playwright browsers...")
+            main(["install"])  # 执行驱动安装
+            main(["install-deps"])  # 安装系统依赖（Linux/Mac需sudo）[7](@ref)
+    except ImportError:
+        raise RuntimeError("Playwright not installed. Run `pip install playwright` first.")
+
+from astrbot.api.event import filter, AstrMessageEvent
+
+@filter.on_astrbot_loaded()
+async def on_astrbot_loaded(self):
+    install_playwright_browsers()
+
 @register(
     "DeltaForce",
     "UyNewNas",
