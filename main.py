@@ -7,7 +7,7 @@ from astrbot.api import logger
 import astrbot.api.message_components as Comp
 
 from .data_deltaforce import DrawItem, DataDeltaForce
-from .price import DeltaForcePrice
+from .price import DeltaForcePrice, AcgIceSJZApi
 data = DataDeltaForce()
 
 @register(
@@ -351,4 +351,73 @@ class DeltaForcePlugin(Star):
             yield event.plain_result(f"{player_raw} 背包总价值约为: {total_price:,}哈夫币")
         else:
             yield event.plain_result(f"{player_raw} 背包中没有可查询价格的物品")
-       
+    
+    @deltaforce_cmd.command("卡战备") # type: ignore
+    async def deltaforce_gear_value_threshold(self, event: AstrMessageEvent, value:str):
+        
+        if value.upper() == "11W":
+            lv = '0'
+        elif value.upper() == "18W":
+            lv = '1'
+        elif value.upper() == "35W":
+            lv = '2'
+        elif value.upper() == "45W":
+            lv = '3'
+        elif value.upper() == "55W":
+            lv = '4'
+        elif value.upper() == "78W":
+            lv = '5'
+        else:
+            yield event.plain_result("无效的卡战备数值")
+            return
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        yield event.plain_result(f"{player_raw} 正在查询卡战备数据(数据来源www.acgice.com),请稍等...")
+        acg_api = AcgIceSJZApi()
+        captured_data = await acg_api.jz_zb()
+        if lv not in captured_data:
+            yield event.plain_result(f"{player_raw} 未找到对应的卡战备数据")
+            return
+        data = captured_data[lv]
+        if not data:
+            yield event.plain_result(f"{player_raw} 未找到对应的卡战备数据2")
+            return
+        data = data.get("data", [])
+        if not data:
+            yield event.plain_result(f"{player_raw} 未找到对应的卡战备数据3")
+            return
+        # data有三条数据
+        for index, item in enumerate(data):
+            plain = []
+            item_data = item.get("data", [])
+            item_name = item.get("name", "未知")
+            item_jz = item.get("jz", "未知战备价值")
+            item_price = item.get("price", 0)
+            plain.append(f"第{index+1}个方案: 【{item_name}】,卡战备: 【{item_jz}】,价格: {item_price}哈夫币")
+            for equipment in item_data:
+                equipment_name = equipment.get("name", "未知")
+                equipment_price = equipment.get("price", 0)
+                equipment_grade = equipment.get("grade", "未知")
+                if equipment_grade == 0:
+                    equipment_grade = "无"
+                if equipment_grade == 1:
+                    equipment_grade = "白"
+                elif equipment_grade == 2:
+                    equipment_grade = "绿"
+                elif equipment_grade == 3:
+                    equipment_grade = "蓝"
+                elif equipment_grade == 4:
+                    equipment_grade = "紫"
+                elif equipment_grade == 5:
+                    equipment_grade = "金"
+                elif equipment_grade == 6:
+                    equipment_grade = "红"                    
+                equipment_pic = equipment.get("pic", "")
+                equipment_type = equipment.get("type", "未知")
+                equipment_info = f"{equipment_name}({equipment_grade},{equipment_type}):价格{equipment_price}哈夫币"
+                # if equipment_pic:
+                #   chain.append(Comp.Image.fromURL(equipment_pic))
+                plain.append(equipment_info)
+            yield event.plain_result("\n".join(plain))
