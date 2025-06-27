@@ -1,7 +1,7 @@
 '''
 Author: slava
 Date: 2025-06-14 02:53:16
-LastEditTime: 2025-06-28 03:26:48
+LastEditTime: 2025-06-28 05:12:48
 LastEditors: ch4nslava@gmail.com
 Description: 
 
@@ -428,7 +428,7 @@ class DeltaForcePlugin(Star):
         elif value.upper() == "78W":
             lv = '5'
         else:
-            yield event.plain_result("无效的卡战备数值")
+            yield event.plain_result("无效的卡战备数值,请输入11W,18W,35W,45W,55W,78W之一")
             return
         player_id = event.get_sender_id()
         player_name = event.get_sender_name()
