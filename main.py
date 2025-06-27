@@ -1,7 +1,7 @@
 '''
 Author: slava
 Date: 2025-06-14 02:53:16
-LastEditTime: 2025-06-27 09:39:43
+LastEditTime: 2025-06-28 03:26:48
 LastEditors: ch4nslava@gmail.com
 Description: 
 
@@ -111,6 +111,7 @@ class DeltaForcePlugin(Star):
         - 查询背包价格: 查询背包中物品的总价格
         - 卡战备（空格）数值: 查询卡战备数据,数值可以是11W,18W,35W,45W,55W,78W
         - 每日密码: 查询每日地图密码
+        - 帮助: 显示该帮助信息
         """
         pass
     
@@ -444,6 +445,10 @@ class DeltaForcePlugin(Star):
             yield event.plain_result(f"{player_raw} 未找到对应的卡战备数据2")
             return
         data = data.get("data", [])
+        
+        data_time = data.get("time", "未知时间")
+        data = data.get("data", [])     
+           
         if not data:
             yield event.plain_result(f"{player_raw} 未找到对应的卡战备数据3")
             return
