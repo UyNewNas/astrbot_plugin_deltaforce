@@ -1,3 +1,11 @@
+'''
+Author: slava
+Date: 2025-06-14 02:53:16
+LastEditTime: 2025-06-27 09:39:43
+LastEditors: ch4nslava@gmail.com
+Description: 
+
+'''
 
 from typing import Dict, List, Optional, Set, Tuple
 from datetime import datetime
@@ -91,8 +99,40 @@ class DeltaForcePlugin(Star):
     
     @filter.command_group("deltaforce", alias={"洲","DF"})
     async def deltaforce_cmd(self, event: AstrMessageEvent):
+        """
+        三角洲小工具插件指令帮助
+        deltaforce （洲/DF）指令组
+        该指令组包含以下子指令:
+        - 签到: 签到并获得行动点
+        - 跑刀: 进行跑刀操作,消耗行动点
+        - 查询背包: 查询背包中的物品
+        - 查询行动点: 查询当前可用的行动点
+        - 查询价格（空格）物品名称: 查询物品的价格
+        - 查询背包价格: 查询背包中物品的总价格
+        - 卡战备（空格）数值: 查询卡战备数据,数值可以是11W,18W,35W,45W,55W,78W
+        - 每日密码: 查询每日地图密码
+        """
         pass
     
+    @deltaforce_cmd.command("帮助") # type: ignore
+    async def deltaforce_help(self, event: AstrMessageEvent):
+        """显示命令帮助信息"""
+        plain = [
+            "三角洲小工具插件指令帮助",
+            "deltaforce （洲/DF）指令组",
+            "该指令组包含以下子指令:",
+            "- 签到: 签到并获得行动点",
+            "- 跑刀: 进行跑刀操作,消耗行动点",
+            "- 查询背包: 查询背包中的物品",
+            "- 查询行动点: 查询当前可用的行动点",
+            "- 查询价格（空格）物品名称: 查询物品的价格",
+            "- 查询背包价格: 查询背包中物品的总价格",
+            "- 卡战备（空格）数值: 查询卡战备数据,数值可以是11W,18W,35W,45W,55W,78W",
+            "- 每日密码: 查询每日地图密码",
+            "- 帮助: 显示该帮助信息"
+        ]
+        chain = [Comp.At(qq=event.get_sender_id()), Comp.Plain("\n".join(plain))]
+        yield event.chain_result(chain)
     
     @deltaforce_cmd.command("签到") # type: ignore
     async def deltaforce_sign(self, event: AstrMessageEvent):
@@ -189,7 +229,7 @@ class DeltaForcePlugin(Star):
     
     @deltaforce_cmd.command("跑刀") # type: ignore
     async def deltaforce_run(self, event: AstrMessageEvent, _times: str|None=None):
-        """跑刀"""
+        """跑刀（上限10次）"""
         try:
             logger.info(self.games)
             player_id = event.get_sender_id()
@@ -373,6 +413,7 @@ class DeltaForcePlugin(Star):
     
     @deltaforce_cmd.command("卡战备") # type: ignore
     async def deltaforce_gear_value_threshold(self, event: AstrMessageEvent, value:str):
+        """查询卡战备数据,数值可以是11W,18W,35W,45W,55W,78W"""
         if value.upper() in ["11W",""]:
             lv = '0'
         elif value.upper() == "18W":
@@ -442,7 +483,7 @@ class DeltaForcePlugin(Star):
 
     @deltaforce_cmd.command("每日密码") # type: ignore
     async def deltaforce_daily_password(self, event: AstrMessageEvent):
-        """查询每日密码"""
+        """查询地图每日密码"""
         acg_api = AcgIceSJZApi()
         map_pwd_data = await acg_api.map_pwd_daily()
         if not map_pwd_data:
