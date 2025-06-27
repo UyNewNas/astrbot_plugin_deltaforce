@@ -7,28 +7,27 @@ from astrbot.api import logger
 import astrbot.api.message_components as Comp
 
 from .data_deltaforce import DrawItem, DataDeltaForce
-from .price import DeltaForcePrice, AcgIceSJZApi
+from .price import DeltaForcePrice
+from .acg_ice_api import AcgIceSJZApi
 data = DataDeltaForce()
 
-import subprocess
-from playwright import _repo_version as pw_version
+# import subprocess
+# from playwright import _repo_version as pw_version
 
-def install_playwright_browsers():
-    try:
-        # 检查驱动是否已安装
-        from playwright.__main__ import main
-        if not subprocess.run(["playwright", "install", "--dry-run"], capture_output=True).returncode == 0:
-            print("Installing Playwright browsers...")
-            main(["install"])  # 执行驱动安装
-            main(["install-deps"])  # 安装系统依赖（Linux/Mac需sudo）[7](@ref)
-    except ImportError:
-        raise RuntimeError("Playwright not installed. Run `pip install playwright` first.")
+# def install_playwright_browsers():
+#     try:
+#         # 检查驱动是否已安装
+#         from playwright.__main__ import main
+#         if not subprocess.run(["playwright", "install", "--dry-run"], capture_output=True).returncode == 0:
+#             print("Installing Playwright browsers...")
+#             main(["install"])  # 执行驱动安装
+#             main(["install-deps"])  # 安装系统依赖（Linux/Mac需sudo）[7](@ref)
+#     except ImportError:
+#         raise RuntimeError("Playwright not installed. Run `pip install playwright` first.")
 
-from astrbot.api.event import filter, AstrMessageEvent
-
-@filter.on_astrbot_loaded()
-async def on_astrbot_loaded(self):
-    install_playwright_browsers()
+# @filter.on_astrbot_loaded()
+# async def on_astrbot_loaded(self):
+#     install_playwright_browsers()
 
 @register(
     "DeltaForce",
@@ -374,8 +373,7 @@ class DeltaForcePlugin(Star):
     
     @deltaforce_cmd.command("卡战备") # type: ignore
     async def deltaforce_gear_value_threshold(self, event: AstrMessageEvent, value:str):
-        
-        if value.upper() == "11W":
+        if value.upper() in ["11W",""]:
             lv = '0'
         elif value.upper() == "18W":
             lv = '1'
@@ -423,17 +421,17 @@ class DeltaForcePlugin(Star):
                 if equipment_grade == 0:
                     equipment_grade = "无"
                 if equipment_grade == 1:
-                    equipment_grade = "白"
+                    equipment_grade = "白⚪"
                 elif equipment_grade == 2:
-                    equipment_grade = "绿"
+                    equipment_grade = "绿🟢"
                 elif equipment_grade == 3:
-                    equipment_grade = "蓝"
+                    equipment_grade = "蓝🔵"
                 elif equipment_grade == 4:
-                    equipment_grade = "紫"
+                    equipment_grade = "紫🟣"
                 elif equipment_grade == 5:
-                    equipment_grade = "金"
+                    equipment_grade = "金🟡"
                 elif equipment_grade == 6:
-                    equipment_grade = "红"                    
+                    equipment_grade = "红🔴"                    
                 equipment_pic = equipment.get("pic", "")
                 equipment_type = equipment.get("type", "未知")
                 equipment_info = f"{equipment_name}({equipment_grade},{equipment_type}):价格{equipment_price}哈夫币"
@@ -441,3 +439,44 @@ class DeltaForcePlugin(Star):
                 #   chain.append(Comp.Image.fromURL(equipment_pic))
                 plain.append(equipment_info)
             yield event.plain_result("\n".join(plain))
+
+    @deltaforce_cmd.command("每日密码") # type: ignore
+    async def deltaforce_daily_password(self, event: AstrMessageEvent):
+        """查询每日密码"""
+        acg_api = AcgIceSJZApi()
+        map_pwd_data = await acg_api.map_pwd_daily()
+        if not map_pwd_data:
+            yield event.plain_result("未找到每日密码数据")
+            return        
+        if not map_pwd_data:
+            yield event.plain_result("未找到每日密码数据3")
+            return
+        map_pwd_dict = map_pwd_data.get("data", "未知密码")
+        plain = []        
+        for key, value in map_pwd_dict.items():
+            if key == 'a':
+                map_name = "零号大坝"
+                map_pwd = value[0]
+                pwd_date = value[1]
+                plain.append(f"每日地图密码({pwd_date})查询结果:")
+                plain.append(f"地图: {map_name}, 密码: {map_pwd}")
+                continue
+            if key == 'b':
+                map_name = "长弓溪谷"
+                map_pwd = value[0]
+                pwd_date = value[1]
+                plain.append(f"地图: {map_name}, 密码: {map_pwd}")
+                continue
+            if key == 'c':
+                map_name = "巴克什"
+                map_pwd = value[0]
+                pwd_date = value[1]
+                plain.append(f"地图: {map_name}, 密码: {map_pwd}")
+                continue
+            if key == 'd':
+                map_name = "航天基地"
+                map_pwd = value[0]
+                pwd_date = value[1]
+                plain.append(f"地图: {map_name}, 密码: {map_pwd}")
+                continue
+        yield event.plain_result("\n".join(plain))

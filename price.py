@@ -129,39 +129,3 @@ class DeltaForcePrice:
                 return item.get("price", 0)
         return 0
 
-from playwright.async_api  import async_playwright  
-from typing import List, Dict, Optional, Callable, Union
-import re
-class AcgIceSJZApi:
-    """
-    acg ice 的api调用
-    """
-    def __init__(self):
-        self.url = "https://www.acgice.com/sjz/v/zb_ss"
-        self.p = async_playwright()
-    
-    async def jz_zb(self):
-        captured_data = {}  # 存储各接口数据：{lv: 数据}
-        async with self.p as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()            
-            
-            # 监听所有响应
-            async def capture_api(response):
-                url = response.url
-                
-                # 匹配目标接口模式
-                if "/api/sjz/jz_zb?lv=" in url:
-                    logger.info(f"捕获到响应: {url}")
-                    lv = url.split("&")[0].split("=")[-1]  # 提取lv值
-                    if lv in [str(i) for i in range(6)]:  # 仅捕获lv=0~5
-                        captured_data[lv] = await response.json()  # 存储JSON数据
-            page.on("response", capture_api)
-            await page.goto(self.url)
-            await page.wait_for_timeout(5000)
-            await browser.close()
-            
-        for lv, data in captured_data.items():
-            print(f"lv={lv} 数据: {data}")
-        
-        return captured_data
