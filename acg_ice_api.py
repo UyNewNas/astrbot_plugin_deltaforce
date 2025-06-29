@@ -1,7 +1,7 @@
 '''
 Author: slava
 Date: 2025-06-27 08:51:44
-LastEditTime: 2025-06-28 04:52:24
+LastEditTime: 2025-06-29 12:17:27
 LastEditors: ch4nslava@gmail.com
 Description: 
 
@@ -74,7 +74,7 @@ class AcgIceSJZApi:
         return captured_data.get("map_pwd", {})
     
     async def get_price(self):
-        a_list = ["gun","helmet","armor","chest","bag","consume","collection"]
+        a_list = ["gun","helmet","armor","chest","bag","consume","collection","keys"]
         captured_data = {}
         [captured_data.setdefault(a, []) for a in a_list]  # 初始化字典
         async with self.p as p:
@@ -87,7 +87,7 @@ class AcgIceSJZApi:
                 async def capture_api(response):
                     url = response.url
                     # 匹配目标接口模式
-                    if f"/api/sjz/item_list?a={a}" in url:
+                    if f"/api/sjz/item_list?a={a if a != 'keys' else ''}" in url:
                         logger.info(f"捕获到响应: {url}")
                         p = url.split("&p=")[-1].split("&")[0]
                         resp = await response.json()
