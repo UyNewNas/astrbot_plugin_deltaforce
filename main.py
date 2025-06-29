@@ -1,7 +1,7 @@
 '''
 Author: slava
 Date: 2025-06-14 02:53:16
-LastEditTime: 2025-06-28 05:12:48
+LastEditTime: 2025-06-29 12:31:43
 LastEditors: ch4nslava@gmail.com
 Description: 
 
@@ -386,6 +386,7 @@ class DeltaForcePlugin(Star):
         player_name = event.get_sender_name()
         player_raw = f"{player_name}({player_id})"
         player_raw = self._format_display_info(player_raw)
+        yield event.plain_result(f"查询物品（{item_name}）的价格(数据来源www.acgice.com)中,请稍候...")
         price = await DeltaForcePrice().get_price(item_name)
         if price is not None:
             yield event.plain_result(f"{player_raw}\n{item_name} 的当日价格为: {price:,}哈夫币\n具体价格可能会有波动,请以实际游戏为准")
@@ -486,6 +487,20 @@ class DeltaForcePlugin(Star):
                 plain.append(equipment_info)
             yield event.plain_result("\n".join(plain))
 
+    @deltaforce_cmd.command("更新价格") # type: ignore
+    async def deltaforce_update_price(self, event: AstrMessageEvent):
+        """强制更新价格"""
+        player_id = event.get_sender_id()
+        player_name = event.get_sender_name()
+        player_raw = f"{player_name}({player_id})"
+        player_raw = self._format_display_info(player_raw)
+        yield event.plain_result("正在更新中,请稍候...")
+        price = await DeltaForcePrice().get_all_items_price()
+        if price is not None:
+            yield event.plain_result(f"更新交易行价格成功！")
+        else:
+            yield event.plain_result(f"更新价格失败,请咨询管理员。")
+            
     @deltaforce_cmd.command("每日密码") # type: ignore
     async def deltaforce_daily_password(self, event: AstrMessageEvent):
         """查询地图每日密码"""

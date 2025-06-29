@@ -128,10 +128,7 @@ class DeltaForcePrice:
                     if item["name"] == item_name:
                         return item
         return {}
-                    
-            
-        
-           
+    
     async def get_price(self, item_name: str) -> int:
         """
         获取单个物品的价格
