@@ -1,4 +1,3 @@
-
 import aiohttp
 import os
 import json
@@ -10,6 +9,7 @@ from astrbot.api import logger
 from .acg_ice_api import AcgIceSJZApi
 from data.plugins.astrbot_plugin_deltaforce import acg_ice_api
 
+
 class IOPrice:
     """
     读取和写入price.json文件
@@ -17,11 +17,12 @@ class IOPrice:
         "20250101": [<item1>, <item2>, ...]
     }
     """
+
     def __init__(self) -> None:
         self.path = os.path.join(os.path.dirname(__file__), "price.json")
         self.data = self._read_json(self.path)
         self.data = self.data if self.data is not None else {}
-        
+
     def _read_json(self, path) -> Dict:
         """
         读取json文件
@@ -42,40 +43,36 @@ class IOPrice:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
-    
+
     def get(self, key: str) -> Dict:
         """
         获取json文件中的数据
         """
         return self.data[key] if key in self.data else {}
 
-    def put(self, key: str, value: Dict|List) -> None:
+    def put(self, key: str, value: Dict | List) -> None:
         """
         写入json文件中的数据
         """
         self.data[key] = value
         self._write_json(self.data)
         self.data = self._read_json(self.path)
-        
 
 
 class DeltaForcePrice:
-    
     def __init__(self):
         self.session = aiohttp.ClientSession()
         # self.url = "https://tool.zxfps.com/api/sjz/item_list"
         self.io_price = IOPrice()
         now = datetime.datetime.now()
-        date = f"{now.year}{now.month:02d}{now.day:02d}" 
-        
-        
+        date = f"{now.year}{now.month:02d}{now.day:02d}"
+
     def _new_io(self):
         """
         创建新的IOPrice实例
         """
         self.io_price = IOPrice()
-        
-        
+
     async def get_all_items_price(self):
         """
         获取今天所有物品的价格
@@ -85,7 +82,7 @@ class DeltaForcePrice:
         date = f"{now.year}{now.month:02d}{now.day:02d}{now.hour:02d}"
         acg_ice_api = AcgIceSJZApi()
         item_list = await acg_ice_api.get_price()
-        '''
+        """
         item_list = {
             "gun": [
                 {
@@ -96,7 +93,7 @@ class DeltaForcePrice:
                 }
             ],
         }
-        '''
+        """
         if not item_list:
             logger.error("获取物品价格失败，item_list 为空")
             return {}
@@ -109,16 +106,18 @@ class DeltaForcePrice:
                 item_data = {
                     "name": item.get("name", ""),
                     "grade": item.get("grade", 0),
-                    "price": item.get("price", 0),
-                    "pic": item.get("pic", "")
+                    "price": int(item.get("current_price", "0").replace(",", "")),
+                    # "pic": item.get("pic", "")
                 }
                 self.io_price.data[date][item_type].append(item_data)
         self.io_price.put(date, self.io_price.data[date])
-        logger.info(f"获取物品价格成功，日期: {date}, 物品数量: {sum(len(v) for v in self.io_price.data[date].values())}")
+        logger.info(
+            f"获取物品价格成功，日期: {date}, 物品数量: {sum(len(v) for v in self.io_price.data[date].values())}"
+        )
         return self.io_price.data[date]
-    
+
     @staticmethod
-    def query_in_dict(dict_item: Dict[str,List[Dict]], item_name)-> Dict:
+    def query_in_dict(dict_item: Dict[str, List[Dict]], item_name) -> Dict:
         """
         遍历物品的静态方法
         """
@@ -128,14 +127,14 @@ class DeltaForcePrice:
                     if item["name"] == item_name:
                         return item
         return {}
-    
+
     async def get_price(self, item_name: str) -> int:
         """
         获取单个物品的价格
         """
         self._new_io()
         now = datetime.datetime.now()
-        date = f"{now.year}{now.month:02d}{now.day:02d}{now.hour:02d}"        
+        date = f"{now.year}{now.month:02d}{now.day:02d}{now.hour:02d}"
         if date in self.io_price.data:
             item = self.query_in_dict(self.io_price.data[date], item_name)
             return item.get("price", 0)
@@ -153,11 +152,10 @@ class DeltaForcePrice:
                     # 找到匹配的物品，返回价格
                     self.io_price.data[date][item_name] = item
                     self.io_price.put(date, self.io_price.data[date])
-                    logger.info(f"找到 {item_type} 物品 {item_name} 的价格: {item['price']}")
-                    return item["price"]            
+                    logger.info(
+                        f"找到 {item_type} 物品 {item_name} 的价格: {item['price']}"
+                    )
+                    return item["price"]
         # 如果没有找到，返回0
         logger.warning(f"未找到物品 {item_name} 的价格")
         return 0
-                
-        
-
