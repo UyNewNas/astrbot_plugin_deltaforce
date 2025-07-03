@@ -1,35 +1,54 @@
 name: Validate New Issues
 on:
   issues:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened] # 包含重新打开事件
 
 jobs:
-  check-completeness:
+  validate:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write # 必须权限
     steps:
       - name: Check required fields
         uses: actions/github-script@v6
         with:
           script: |
-            const issueBody = context.payload.issue.body;
-            // 设置必填字段标识（根据模板中的标题）
+            // 1. 确保标签存在
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "needs-info"
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "needs-info",
+                color: "FFD700",
+                description: "需要补充信息"
+              });
+            }
+
+            // 2. 验证必填字段
+            const issueBody = context.payload.issue.body || "";
             const requiredKeys = ["## 环境版本", "## 复现步骤"];
             const isInvalid = requiredKeys.some(key => !issueBody.includes(key));
             
+            // 3. 调试输出
+            console.log("Issue validation status:", isInvalid ? "INVALID" : "VALID");
+            
+            // 4. 处理无效Issue
             if (isInvalid) {
-              // 添加提醒评论
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: "⚠️ **信息不完整**\n请补充模板要求的必填信息！系统将在24小时后自动关闭此Issue"
-              });
-              
-              // 添加待处理标签
-              github.rest.issues.addLabels({
+              await github.rest.issues.addLabels({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 labels: ["needs-info"]
+              });
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                body: "⚠️ 请补充以下必填信息：\n- 环境版本\n- 复现步骤"
               });
             }
