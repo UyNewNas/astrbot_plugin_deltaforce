@@ -1,7 +1,7 @@
 name: Validate New Issues
 on:
   issues:
-    types: [opened, edited]
+    types: [opened, edited, reopened]
 
 jobs:
   check-completeness:
