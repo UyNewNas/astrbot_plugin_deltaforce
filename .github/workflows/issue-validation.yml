@@ -1,0 +1,35 @@
+name: Validate New Issues
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  check-completeness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required fields
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = context.payload.issue.body;
+            // 设置必填字段标识（根据模板中的标题）
+            const requiredKeys = ["## 环境版本", "## 复现步骤"];
+            const isInvalid = requiredKeys.some(key => !issueBody.includes(key));
+            
+            if (isInvalid) {
+              // 添加提醒评论
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: "⚠️ **信息不完整**\n请补充模板要求的必填信息！系统将在24小时后自动关闭此Issue"
+              });
+              
+              // 添加待处理标签
+              github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ["needs-info"]
+              });
+            }

@@ -1,0 +1,17 @@
+name: 🐞 Bug反馈
+description: 提交Bug时需提供完整信息
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: 环境版本
+      placeholder: "操作系统/浏览器/Git版本"
+    validations:
+      required: true  # 强制填写
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: "清晰描述Bug触发流程"
+    validations:
+      required: true

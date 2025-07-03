@@ -1,0 +1,22 @@
+name: Close Incomplete Issues
+on:
+  schedule:
+    # 每天UTC时间0点运行（北京时间8点）
+    - cron: '0 0 * * *'
+  workflow_dispatch:    # 支持手动触发
+
+jobs:
+  close-stale-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues missing info
+        uses: actions/stale@v8
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-label: "needs-info"  # 监控带此标签的Issue
+          days-before-stale: -1            # 立即处理已有此标签的Issue
+          days-before-close: 1             # 1天后自动关闭
+          close-issue-message: |
+            ⛔ 自动关闭通知  
+            此Issue因超过24小时未补充必要信息而被自动关闭。  
+            如需重新提交，请确保填写模板中所有必填项。

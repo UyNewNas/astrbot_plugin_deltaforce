@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 提问前必读
+    url: https://example.com/issue-guide
+    about: 提交前请阅读指南
