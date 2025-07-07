@@ -49,14 +49,14 @@ class AcgIceSJZApi:
 
         for block in kzb_blocks:
             # 提取卡战备标题和日期
-            title_tag = block.find("h3", class_="component-preview-title")
+            title_tag = block.find("h3", class_="component-preview-title") # type: ignore
             if not title_tag:
                 continue
 
             title_text = title_tag.get_text(strip=True)
             if "卡战备" not in title_text:
                 continue
-            date_span = title_tag.find("span", class_="p-2")
+            date_span = title_tag.find("span", class_="p-2")# type: ignore
             update_time = date_span.get_text(strip=True) if date_span else ""
 
             # 提取战备值（如78W）
@@ -76,14 +76,14 @@ class AcgIceSJZApi:
                 continue
 
             # 提取三个套装
-            suits = suits_container.find_all(
+            suits = suits_container.find_all( # type: ignore
                 "ul", class_="list bg-base-500 rounded-box shadow-md m-2"
             )
             for suit in suits:
                 suit_data = {"name": "", "cost": 0, "items": []}
 
                 # 提取套装名称和花费
-                header = suit.find("li", class_="p-4")
+                header = suit.find("li", class_="p-4")# type: ignore
                 if header:
                     header_text = header.get_text(strip=True)
                     name_match = re.search(r"【(.+?)】", header_text)
@@ -95,21 +95,21 @@ class AcgIceSJZApi:
                         suit_data["cost"] = int(cost_match.group(1).replace(",", ""))
 
                 # 提取物品信息
-                items = suit.find_all("li", class_="list-row")
+                items = suit.find_all("li", class_="list-row") # type: ignore
                 for item in items:
                     # 跳过非物品行（如标题行）
-                    if "cursor-pointer" not in item.get("class", []):
+                    if "cursor-pointer" not in item.get("class", []): # type: ignore
                         continue
 
                     item_data = {"name": "", "type": "", "price": 0, "grade": ""}
 
                     # 物品名称
-                    name_div = item.select_one(".list-col-grow > div:first-child")
+                    name_div = item.select_one(".list-col-grow > div:first-child") # type: ignore
                     if name_div:
                         item_data["name"] = name_div.get_text(strip=True)
 
                     # 物品价格
-                    price_div = item.select_one(
+                    price_div = item.select_one( # type: ignore
                         ".text-xs.uppercase.font-semibold.opacity-60"
                     )
                     if price_div:
@@ -121,14 +121,14 @@ class AcgIceSJZApi:
                             )
 
                     # 物品类型
-                    type_badge = item.select_one(".badge.badge-success")
+                    type_badge = item.select_one(".badge.badge-success") # type: ignore
                     if type_badge:
                         item_data["type"] = type_badge.get_text(strip=True)
 
                     # 物品等级
-                    img = item.find("img")
-                    if img and "data-grade" in img.attrs:
-                        item_data["grade"] = img["data-grade"]
+                    img = item.find("img") # type: ignore
+                    if img and "data-grade" in img.attrs: # type: ignore
+                        item_data["grade"] = img["data-grade"] # type: ignore
 
                     suit_data["items"].append(item_data)
 
@@ -188,6 +188,7 @@ class AcgIceSJZApi:
             "keys",
         ]
         captured_data = {a: [] for a in a_list}  # 初始化字典
+        import re  # 导入正则模块用于提取数字
 
         async with self.p as p:
             browser = await p.chromium.launch(headless=True)
@@ -215,13 +216,40 @@ class AcgIceSJZApi:
 
                     for row in rows:
                         try:
-                            # 提取物品名称
+                            # 提取物品ID和名称
                             name_element = await row.query_selector("div.font-bold")
                             name = (
                                 await name_element.inner_text()
                                 if name_element
                                 else "N/A"
                             )
+                            
+                            # 提取图片链接获取物品ID
+                            item_id = None
+                            img_container = await row.query_selector("div.avatar > div.mask-squircle")
+                            if img_container:
+                                img_element = await img_container.query_selector("img")
+                                if img_element:
+                                    img_src = await img_element.get_attribute("src")
+                                    if img_src:
+                                        # 提取物品ID - 从URL末尾提取数字部分
+                                        match = re.search(r'/(?:\d+|p_[^/.]+)\.png$', img_src)
+                                        if match:
+                                            item_id = match.group(1) if match.lastindex else match.group(0)
+                            
+                            # 构建图片URL
+                            pic_url = f"https://playerhub.df.qq.com/playerhub/60004/object{item_id}" if item_id else ""
+                            pic_url = pic_url.replace("p_","key/p_")
+                            
+                            # 提取品质信息
+                            grade = 0  # 默认值
+                            grade_element = await row.query_selector("div.text-sm.opacity-50")
+                            if grade_element:
+                                grade_text = await grade_element.inner_text()
+                                # 使用正则提取数字
+                                match = re.search(r'品质：(\d+)级', grade_text)
+                                if match:
+                                    grade = int(match.group(1))
 
                             # 提取价格数据
                             cells = await row.query_selector_all("td")
@@ -229,10 +257,12 @@ class AcgIceSJZApi:
                                 current_price = await cells[1].inner_text()
                                 today_change = await cells[2].inner_text()
 
-                                # 添加到结果
+                                # 添加到结果 - 添加grade和pic字段
                                 captured_data[a].append(
                                     {
                                         "name": name,
+                                        "grade": grade,  # 添加品质字段
+                                        "pic": pic_url,  # 添加图片URL字段
                                         "current_price": current_price,
                                         "today_change": today_change,
                                     }

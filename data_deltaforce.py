@@ -1,8 +1,14 @@
 import os
 import json
 from typing import Dict, List, Optional, Set, Tuple
+from astrbot.api import logger
 
-
+def check_file(path, default_txt='{}'):
+    if not os.path.exists(path):
+        with open(path,'w') as f:
+            f.write(default_txt)
+        logger.info(f"文件{path}已创建")
+            
 class IODeltaForce:
     """
     读取和写入deltaforce.json文件
@@ -10,6 +16,7 @@ class IODeltaForce:
 
     def __init__(self) -> None:
         self.path = os.path.join(os.path.dirname(__file__), "deltaforce.json")
+        check_file(self.path)
         self.data = self._read_json(self.path)
         self.data = self.data if self.data is not None else {}
         self.data = (
@@ -97,16 +104,17 @@ class DataDeltaForce:
         self.put("deltaforce", data)
 
 
-class ROCollection:
+class IOItems:
     """
-    读取collection.json文件
+    读取物品的父类
     """
 
-    def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "collection.json")
+    def __init__(self, item_type) -> None:
+        self.path = os.path.join(os.path.dirname(__file__), "%s.json"%item_type)
+        check_file(self.path,"[]")
         self.data = self._read_json(self.path)
 
-    def _read_json(self, path) -> Dict:
+    def _read_json(self, path) -> List[Dict]:
         """
         读取json文件
         """
@@ -116,153 +124,47 @@ class ROCollection:
                     return json.load(f)
             except json.JSONDecodeError:
                 os.remove(path)
-        return {}
-
-    def get(self, key: str) -> Dict:
+        return []
+    
+    def _write_json(self, data: List[Dict]) -> None:
         """
-        获取json文件中的数据
+        写入json文件
         """
-        return self.data[key] if key in self.data else {}
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
 
-
-class RORoomKey:
-    """
-    读取key.json文件
-    """
-
+class IOArmor(IOItems):
     def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "key.json")
-        self.data = self._read_json(self.path)
+        super().__init__("armor")
 
-    def _read_json(self, path) -> Dict:
-        """
-        读取json文件
-        """
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                os.remove(path)
-        return {}
-
-    def get(self, key: str) -> Dict:
-        """
-        获取json文件中的数据
-        """
-        return self.data[key] if key in self.data else {}
-
-
-class ROArmor:
-    """
-    读取armor.json文件
-    """
-
+class IOBag(IOItems):
     def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "armor.json")
-        self.data = self._read_json(self.path)
-
-    def _read_json(self, path) -> Dict:
-        """
-        读取json文件
-        """
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                os.remove(path)
-        return {}
-
-    def get(self, key: str) -> Dict:
-        """
-        获取json文件中的数据
-        """
-        return self.data[key] if key in self.data else {}
-
-
-class ROBag:
-    """
-    读取bag.json文件
-    """
-
+        super().__init__("bag")
+        
+class IOChest(IOItems):
     def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "bag.json")
-        self.data = self._read_json(self.path)
+        super().__init__("chest")
 
-    def _read_json(self, path) -> Dict:
-        """
-        读取json文件
-        """
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                os.remove(path)
-        return {}
-
-    def get(self, key: str) -> Dict:
-        """
-        获取json文件中的数据
-        """
-        return self.data[key] if key in self.data else {}
-
-
-class ROChest:
-    """
-    读取 chest.json文件
-    """
-
+class IOConsume(IOItems):
     def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "chest.json")
-        self.data = self._read_json(self.path)
+        super().__init__("consume")
 
-    def _read_json(self, path) -> Dict:
-        """
-        读取json文件
-        """
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                os.remove(path)
-        return {}
-
-    def get(self, key: str) -> Dict:
-        """
-        获取json文件中的数据
-        """
-        return self.data[key] if key in self.data else {}
-
-
-class ROHelmet:
-    """
-    读取 helmet.json文件
-    """
-
+class IOCollection(IOItems):
     def __init__(self) -> None:
-        self.path = os.path.join(os.path.dirname(__file__), "helmet.json")
-        self.data = self._read_json(self.path)
+        super().__init__("collection")
 
-    def _read_json(self, path) -> Dict:
-        """
-        读取json文件
-        """
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                os.remove(path)
-        return {}
+class IOGun(IOItems):
+    def __init__(self) -> None:
+        super().__init__("gun")
+class IOHelmet(IOItems):
+    def __init__(self) -> None:
+        super().__init__("helmet")
 
-    def get(self, key: str) -> Dict:
-        """
-        获取json文件中的数据
-        """
-        return self.data[key] if key in self.data else {}
+class IOKeys(IOItems):
+    def __init__(self) -> None:
+        super().__init__("keys")
 
 
 import random
@@ -275,12 +177,14 @@ class DrawItem:
 
     def __init__(self) -> None:
         self.items = []
-        self.items.extend(ROCollection().data)
-        self.items.extend(RORoomKey().data)
-        self.items.extend(ROArmor().data)
-        self.items.extend(ROBag().data)
-        self.items.extend(ROChest().data)
-        self.items.extend(ROHelmet().data)
+        self.items.extend(IOArmor().data)
+        self.items.extend(IOBag().data)
+        self.items.extend(IOChest().data)
+        self.items.extend(IOConsume().data)
+        self.items.extend(IOCollection().data)
+        self.items.extend(IOGun().data)
+        self.items.extend(IOHelmet().data)
+        self.items.extend(IOKeys().data)
 
     def draw_item(self):
         weight = random.random() * 100
@@ -297,7 +201,7 @@ class DrawItem:
             pool = [i for i in self.items if i["grade"] == 5]  # 金
         else:
             pool = [i for i in self.items if i["grade"] == 6]  # 红
-
+        print(pool)
         return random.choice(pool)
 
     # 十连保底机制（必出紫+）

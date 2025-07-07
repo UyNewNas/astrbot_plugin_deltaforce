@@ -155,6 +155,8 @@ class DeltaForcePlugin(Star):
         player_raw = f"{player_name}({player_id})"
         player_raw = self._format_display_info(player_raw)
         group_id = event.get_group_id()
+        if "runs" not in self.games:
+            self.games["runs"] = {}
         if group_id not in self.games["runs"]:
             self.games["runs"][group_id] = {}
         if player_id not in self.games["runs"][group_id]:
@@ -216,7 +218,7 @@ class DeltaForcePlugin(Star):
                 tag = "🟡"
             if i == 6:
                 tag = "🔴"
-            collection_names = [collection.get("objectName") for collection in info[i]]
+            collection_names = [collection.get("objectName",collection.get("name")) for collection in info[i]]
             info_str = f"\n{tag}战利品({len(info[i])})有:{','.join(collection_names)}"  # type: ignore
             info["result"] += info_str
         return info["result"]
@@ -227,9 +229,9 @@ class DeltaForcePlugin(Star):
         unique_red = set()
         for collection in collections:
             if collection.get("grade") == 5:
-                unique_gold.add(collection.get("objectName"))
+                unique_gold.add(collection.get("objectName",collection.get("name")))
             if collection.get("grade") == 6:
-                unique_red.add(collection.get("objectName"))
+                unique_red.add(collection.get("objectName",collection.get("name")))
         return {"gold": len(unique_gold), "red": len(unique_red)}
 
     def _format_progress_bar(self, current: int, total: int, length: int = 20) -> str:
@@ -322,6 +324,10 @@ class DeltaForcePlugin(Star):
                 Comp.Plain(f"{player_raw} 跑了 {times} 次刀."),
             ]
             draw_collection = DrawItem()
+            if draw_collection.items == []:
+                await DeltaForcePrice().get_all_items_price()
+                draw_collection = DrawItem()
+            
             if times == 10:
                 results = draw_collection.ten_draw()
                 yield event.plain_result("跑刀中, 请等待雇佣兵返回结果")
@@ -332,13 +338,14 @@ class DeltaForcePlugin(Star):
             total_price = 0
             for _ in results:
                 # 查询物品价格并累加
-                name = _.get("objectName")
+                name = _.get("objectName",_.get("name"))
                 price = await DeltaForcePrice().get_price(name)
                 if price is not None:
                     total_price += price
                 # 只有稀有度大于等于5的才展示图片
                 if _.get("grade") >= 5:
-                    chain.append(Comp.Image.fromURL(_.get("pic")))
+                    if "pic" in _:
+                        chain.append(Comp.Image.fromURL(_.get("pic")))
                     self.games["bags"][player_id].append(_)
             info = self._format_collections(results)
             info += f"\n总价值约为{total_price:,}哈夫币"
@@ -426,7 +433,7 @@ class DeltaForcePlugin(Star):
             return
         total_price = 0
         for item in self.games["bags"][player_id]:
-            price = await DeltaForcePrice().get_price(item.get("objectName"))
+            price = await DeltaForcePrice().get_price(item.get("objectName",item.get("name")))
             if price is not None:
                 total_price += price
         if total_price > 0:
