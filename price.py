@@ -7,8 +7,16 @@ import datetime
 from astrbot.api import logger
 
 from .acg_ice_api import AcgIceSJZApi
+from .data_deltaforce import IOItems
 from data.plugins.astrbot_plugin_deltaforce import acg_ice_api
 
+def check_file(path, default_txt='{}'):
+    if not os.path.exists(path):
+        with open(path,'w') as f:
+            f.write(default_txt)
+        logger.info(f"文件{path}已创建")
+            
+            
 
 class IOPrice:
     """
@@ -20,6 +28,7 @@ class IOPrice:
 
     def __init__(self) -> None:
         self.path = os.path.join(os.path.dirname(__file__), "price.json")
+        check_file(self.path)
         self.data = self._read_json(self.path)
         self.data = self.data if self.data is not None else {}
 
@@ -107,13 +116,19 @@ class DeltaForcePrice:
                     "name": item.get("name", ""),
                     "grade": item.get("grade", 0),
                     "price": int(item.get("current_price", "0").replace(",", "")),
-                    # "pic": item.get("pic", "")
+                    "pic": item.get("pic", "")
                 }
                 self.io_price.data[date][item_type].append(item_data)
         self.io_price.put(date, self.io_price.data[date])
         logger.info(
             f"获取物品价格成功，日期: {date}, 物品数量: {sum(len(v) for v in self.io_price.data[date].values())}"
         )
+        # 更新物品
+        for item_type, item_list in self.io_price.data[date].items():
+            io_items = IOItems(item_type)
+            io_items._write_json(item_list)
+        
+        
         return self.io_price.data[date]
 
     @staticmethod
@@ -151,7 +166,6 @@ class DeltaForcePrice:
                 if item["name"] == item_name:
                     # 找到匹配的物品，返回价格
                     self.io_price.data[date][item_name] = item
-                    self.io_price.put(date, self.io_price.data[date])
                     logger.info(
                         f"找到 {item_type} 物品 {item_name} 的价格: {item['price']}"
                     )
