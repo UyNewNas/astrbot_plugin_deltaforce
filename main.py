@@ -6,16 +6,16 @@ LastEditors: ch4nslava@gmail.com
 Description:
 
 """
-
-from pickletools import read_uint1
+import os
 from typing import Dict, List, Optional, Set, Tuple
 from datetime import datetime
-
-from flask import session
+from astrbot.api.all import Record
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 import astrbot.api.message_components as Comp
+from astrbot.core.message.message_event_result import MessageEventResult
+from astrbot.core.star.filter import event_message_type
 from astrbot.core.utils.session_waiter import (
     session_waiter,
     SessionController,
@@ -61,7 +61,19 @@ class DeltaForcePlugin(Star):
             if data.get_deltaforce() is None
             else data.get_deltaforce()
         )
-
+        self.keywords = self.config.get("keywords",["得吃","肥肥撤离","百万撤离","出心了"])
+        logger.info(f"已加载得吃关键词：{self.keywords}")
+        
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def on_message(self, event: AstrMessageEvent)-> MessageEventResult:
+        """
+        当消息中包含配置的关键词任一时, 播放得吃音乐
+        """
+        msg_obj = event.message_obj
+        text = msg_obj.message_str
+        if any(kw in text for kw in self.keywords):
+            yield event.chain_result([Record.fromFileSystem(os.path.join(os.path.dirname(__file__), "big_eat.mp3"))])
+            
     def _parse_display_info(self, raw_info: str) -> Tuple[str, str]:
         try:
             if "(" in raw_info and raw_info.endswith(")"):
