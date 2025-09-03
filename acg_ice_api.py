@@ -178,17 +178,10 @@ class AcgIceSJZApi:
 
     async def get_price(self):
         a_list = [
-            "gun",
-            "helmet",
-            "armor",
-            "chest",
-            "bag",
-            "consume",
-            "collection",
-            "keys",
+            "gun", "helmet", "armor", "chest", 
+            "bag", "consume", "collection", "keys",
         ]
-        captured_data = {a: [] for a in a_list}  # 初始化字典
-        import re  # 导入正则模块用于提取数字
+        captured_data = {a: [] for a in a_list}
 
         async with self.p as p:
             browser = await p.chromium.launch(headless=True)
@@ -199,76 +192,60 @@ class AcgIceSJZApi:
                 page = await context.new_page()
                 logger.info(f"访问{url}列表页")
                 await page.goto(url)
-                await page.wait_for_timeout(3000)  # 等待页面加载
+                await page.wait_for_timeout(3000)
 
                 # 处理分页
                 page_num = 1
-                max_pages = 50  # 安全限制
+                max_pages = 50
 
                 while page_num <= max_pages:
                     # 等待表格加载完成
                     await page.wait_for_selector(
-                        "table.table", state="visible", timeout=15000
+                        ".desktop-table .table-wrapper", state="visible", timeout=15000
                     )
 
                     # 获取所有行
-                    rows = await page.query_selector_all("tbody tr")
+                    rows = await page.query_selector_all("tbody tr.table-row")
 
                     for row in rows:
                         try:
-                            # 提取物品ID和名称
-                            name_element = await row.query_selector("div.font-bold")
-                            name = (
-                                await name_element.inner_text()
-                                if name_element
-                                else "N/A"
-                            )
+                            # 提取物品名称
+                            name_element = await row.query_selector(".item-name")
+                            name = (await name_element.inner_text()).strip() if name_element else "N/A"
                             
-                            # 提取图片链接获取物品ID
-                            item_id = None
-                            img_container = await row.query_selector("div.avatar > div.mask-squircle")
-                            if img_container:
-                                img_element = await img_container.query_selector("img")
-                                if img_element:
-                                    img_src = await img_element.get_attribute("src")
-                                    if img_src:
-                                        # 提取物品ID - 从URL末尾提取数字部分
-                                        match = re.search(r'/(?:\d+|p_[^/.]+)\.png$', img_src)
-                                        if match:
-                                            item_id = match.group(1) if match.lastindex else match.group(0)
-                            
-                            # 构建图片URL
-                            pic_url = f"https://playerhub.df.qq.com/playerhub/60004/object{item_id}" if item_id else ""
-                            pic_url = pic_url.replace("p_","key/p_")
+                            # 直接提取图片URL
+                            img_element = await row.query_selector(".item-avatar img")
+                            pic_url = await img_element.get_attribute("src") if img_element else ""
                             
                             # 提取品质信息
-                            grade = 0  # 默认值
-                            grade_element = await row.query_selector("div.text-sm.opacity-50")
+                            grade_element = await row.query_selector(".item-grade")
+                            grade = 0
                             if grade_element:
                                 grade_text = await grade_element.inner_text()
-                                # 使用正则提取数字
-                                match = re.search(r'品质：(\d+)级', grade_text)
-                                if match:
-                                    grade = int(match.group(1))
+                                match = re.search(r'(\d+)级', grade_text)
+                                grade = int(match.group(1)) if match else 0
 
                             # 提取价格数据
-                            cells = await row.query_selector_all("td")
-                            if len(cells) >= 7:  # 确保有足够的单元格
-                                current_price = await cells[1].inner_text()
-                                today_change = await cells[2].inner_text()
+                            price_cell = await row.query_selector("td.price-cell:nth-child(2)")
+                            change_cell = await row.query_selector("td.change-cell:nth-child(3)")
+                            
+                            current_price = await price_cell.inner_text() if price_cell else "N/A"
+                            today_change = await change_cell.inner_text() if change_cell else "N/A"
+                            
+                            # 清理价格数据中的逗号
+                            current_price = current_price.replace(',', '')
 
-                                # 添加到结果 - 添加grade和pic字段
-                                captured_data[a].append(
-                                    {
-                                        "name": name,
-                                        "grade": grade,  # 添加品质字段
-                                        "pic": pic_url,  # 添加图片URL字段
-                                        "current_price": current_price,
-                                        "today_change": today_change,
-                                    }
-                                )
+                            # 添加到结果
+                            captured_data[a].append({
+                                "name": name,
+                                "grade": grade,
+                                "pic": pic_url,  # 直接使用页面中的图片URL
+                                "current_price": current_price,
+                                "today_change": today_change,
+                            })
                         except Exception as e:
                             logger.error(f"处理行时出错: {e}")
+                            continue
 
                     # 检查是否有下一页
                     next_button = await page.query_selector(
@@ -279,7 +256,7 @@ class AcgIceSJZApi:
 
                     # 点击下一页
                     await next_button.click()
-                    await page.wait_for_timeout(2000)  # 等待页面加载
+                    await page.wait_for_timeout(2000)
                     page_num += 1
 
                 await context.close()
