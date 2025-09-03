@@ -34,5 +34,5 @@ Delta Force 文字交互版游戏插件
 
 # 数据来源
 静态物资数据来源 [https://github.com/jiansenc/DeltaForceData](https://github.com/jiansenc/DeltaForceData)
-静态图片数据来源[df.qq.com](df.qq.com)
-实时数据来自于[acgice_com](acgice.com), B站：[Orzice](https://space.bilibili.com/4201439)
+静态图片数据来源[df.qq.com](https://df.qq.com)
+实时数据来自于[acgice_com](https://www.acgice.com), B站：[Orzice](https://space.bilibili.com/4201439)
